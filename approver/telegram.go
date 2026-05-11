@@ -191,31 +191,35 @@ func parseCallback(data string) (action, reqID string, ok bool) {
 	return a, r, true
 }
 
+// reqIDHexLen is the number of hex characters used for a request identifier.
+// Telegram's inline-keyboard callback_data is capped at 64 bytes; the full
+// sha256 hex (64 chars) plus the "approve:" / "reject:" prefix overflowed that
+// limit and caused BUTTON_DATA_INVALID at send time. 16 hex chars = 64 bits of
+// entropy, which is more than enough to avoid collisions across the small set
+// of in-flight intents this approver tracks.
+const reqIDHexLen = 16
+
 // requestID returns a stable identifier for an Intent derived from sha256 of
-// its JSON encoding. Struct field declaration order in intent.Intent makes
-// json.Marshal output deterministic.
+// its JSON encoding, truncated to reqIDHexLen hex chars. Struct field
+// declaration order in intent.Intent makes json.Marshal output deterministic.
 func requestID(i intent.Intent) (string, error) {
 	b, err := json.Marshal(i)
 	if err != nil {
 		return "", err
 	}
 	h := sha256.Sum256(b)
-	return hex.EncodeToString(h[:]), nil
+	return hex.EncodeToString(h[:])[:reqIDHexLen], nil
 }
 
 // formatIntent renders an Intent for the Telegram approval message.
 func formatIntent(i intent.Intent, reqID string) string {
-	short := reqID
-	if len(short) > 8 {
-		short = short[:8]
-	}
 	return fmt.Sprintf(
 		"🤖 Agent payment request\n\nTo: %s\nValue: %s ETH\nReason: %s\nDeadline: %s\n\nRequest ID: %s",
 		i.To.Hex(),
 		formatETH(i.Value),
 		i.Reason,
 		time.Unix(i.Deadline, 0).UTC().Format(time.RFC3339),
-		short,
+		reqID,
 	)
 }
 
