@@ -48,6 +48,19 @@ txHash, err := b.Submit(ctx, intent.Intent{
 
 The full runnable demo lives in [`examples/monad-testnet`](./examples/monad-testnet).
 
+## Live demo
+
+First successful end-to-end run on Monad testnet (2026-05-11):
+
+- **ReinsEcho contract**: [`0xc45527442Ab539Bc9236e1403FDEa48162b99fb1`](https://testnet.monadexplorer.com/address/0xc45527442Ab539Bc9236e1403FDEa48162b99fb1)
+- **Approved transaction**: [`0xdec0935688e62ba0d5e246b8655ff30f47e7b1f3bec796f4fb6131c8e32f8b0c`](https://testnet.monadexplorer.com/tx/0xdec0935688e62ba0d5e246b8655ff30f47e7b1f3bec796f4fb6131c8e32f8b0c) (block #31083768, status: Success, 1 `Executed` log)
+- **Agent signer**: `0x4512583edCc17358B877FF95690E8a1E475c539d`
+- **Approval channel**: Telegram (human-in-the-loop)
+
+`ReinsEcho` is a 30-line minimal echo contract used to validate the SDK pipeline. It accepts `execute(bytes)` and emits the calldata payload — enough surface to prove `intent → approve → execute` works end-to-end without entangling with a real PolicyVault. Production PolicyVault integration lives in [agent-pay](https://github.com/angqijiang-png/agent-pay).
+
+> Note: during the first live run we hit `BUTTON_DATA_INVALID` from Telegram because the SDK was using a 64-char sha256 hex digest as the inline-keyboard callback ID, exceeding Telegram's 64-byte callback_data limit. Fixed in commit [`d309b74`](https://github.com/angqijiang-png/reins/commit/d309b74) by truncating to 16 chars. Tracked as [issue #6](https://github.com/angqijiang-png/reins/issues/6) — a useful reminder that mock servers don't enforce upstream API constraints.
+
 ## Status
 
 **v0.1.** Telegram approval, single signer, in-memory nonce, exercised on Monad testnet. Not production. The interface contract has known rough edges tracked under the [`v0.2` label](https://github.com/angqijiang-png/reins/labels/v0.2) — encoding decisions, nil-value semantics, signature field ergonomics — that will be resolved before any real integration.
